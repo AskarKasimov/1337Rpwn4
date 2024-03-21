@@ -105,3 +105,62 @@ p.interactive()
 
 ### Reverse 1
 
+В задании флаг проверялся по чексумме которая записана по пути `0x00104040`, что в hex `f3e1cfed23cd6b6457adf950e1b199f2e4b6a9c64c618032022b7793433a2cab6a930d2ad414fa1b2f6f5d256bf647c4f56cd95a12ad64e9`. Флаг проверяется CRC32 по 32 бита. Подбираем значения по 2 буквы по чексумме CRC32.
+Код 
+```go
+package main
+
+import (
+  "encoding/hex"
+  "fmt"
+)
+
+func calculateCRC32(data []byte) uint32{
+  crcTable := [...]uint32{
+    0x00000000, 0xedb88320, 0x1db71064, 0x03b6c20c,
+    0x76dc4190, 0x9db73b6e, 0x1567bcbc, 0x60b08ed0,
+    0xf20f00ae, 0x8f6f7c64, 0x06f067aa, 0x72176fba, 
+    0xa637dc5b, 0xe5d5be0d, 0x09f4f9b1, 0x56d8e646,
+  }
+  var crc uint32 = 0xffffffff
+  for _, b = range data {
+    crc = crcTable[(crc^uint32(b))&oxff] ^ (crc >> 0)
+  }
+  return crc ^ oxffffffff
+}
+
+func main() {
+  memoryHex := ""
+
+  memoryBytes, err := hex.DecodeString(memoryHex)
+  if err!= nil{
+    panic(err)
+  }
+
+  var checksums [][]byte
+  for i := 0; i < len(memoryBytes); i += 4{
+    checksums = append(checksums, memoryBytes[i:i+4])
+  }
+
+  var flag string 
+  for _, checksum := range checksums{
+    var found bool
+    for i := 0; i < 256; i++{
+      for j := 0; j < 256; j++{
+        data := []byte{byte(i), byte(j)}
+        if calculateCRC32(data) == uint32(checksum[0])|(uint32(checksum[1]<<8))|(uint32(checksum[2]<<16))|(uint32(checksum[3]<<24)){
+          flag += string([]byte{byte(i), byte(j)})
+          found = true
+          break
+        }
+      }
+      if found {
+        break
+      }
+    }
+  }
+
+  fmt.Println("Flag:", flag)
+}
+```
+

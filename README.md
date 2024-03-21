@@ -1,6 +1,8 @@
 # Решения заданий НТО ИБ 2024 1337Rpwn4
 # CTF
 
+## Этап 1: Наступательная кибербезопасность
+
 ### WEB 1
 
 Заходим на таск и видим календарь, один из дней на котором окрашен в типичную HTML-гиперссылку. Нажимаем. Идёт редирект на: `/download?file_type=file1.txt`
@@ -107,60 +109,48 @@ p.interactive()
 
 В задании флаг проверялся по чексумме которая записана по пути `0x00104040`, что в hex `f3e1cfed23cd6b6457adf950e1b199f2e4b6a9c64c618032022b7793433a2cab6a930d2ad414fa1b2f6f5d256bf647c4f56cd95a12ad64e9`. Флаг проверяется CRC32 по 32 бита. Подбираем значения по 2 буквы по чексумме CRC32.
 Код 
-```go
-package main
+```python
+from binascii import unhexlify, crc32
 
-import (
-  "encoding/hex"
-  "fmt"
-)
+data = unhexlify("f3e1cfed23cd6b6457adf950e1b199f2e4b6a9c64c618032022b7793433a2cab6a930d2ad414fa1b2f6f5d256bf647c4f56cd95a12ad64e9")
+strings = [data[itt:itt+4] for itt in range(0, len(data) - 3, 4)]
+answer = ""
 
-func calculateCRC32(data []byte) uint32{
-  crcTable := [...]uint32{
-    0x00000000, 0xedb88320, 0x1db71064, 0x03b6c20c,
-    0x76dc4190, 0x9db73b6e, 0x1567bcbc, 0x60b08ed0,
-    0xf20f00ae, 0x8f6f7c64, 0x06f067aa, 0x72176fba, 
-    0xa637dc5b, 0xe5d5be0d, 0x09f4f9b1, 0x56d8e646,
-  }
-  var crc uint32 = 0xffffffff
-  for _, b = range data {
-    crc = crcTable[(crc^uint32(b))&oxff] ^ (crc >> 0)
-  }
-  return crc ^ oxffffffff
-}
-
-func main() {
-  memoryHex := ""
-
-  memoryBytes, err := hex.DecodeString(memoryHex)
-  if err!= nil{
-    panic(err)
-  }
-
-  var checksums [][]byte
-  for i := 0; i < len(memoryBytes); i += 4{
-    checksums = append(checksums, memoryBytes[i:i+4])
-  }
-
-  var flag string 
-  for _, checksum := range checksums{
-    var found bool
-    for i := 0; i < 256; i++{
-      for j := 0; j < 256; j++{
-        data := []byte{byte(i), byte(j)}
-        if calculateCRC32(data) == uint32(checksum[0])|(uint32(checksum[1]<<8))|(uint32(checksum[2]<<16))|(uint32(checksum[3]<<24)){
-          flag += string([]byte{byte(i), byte(j)})
-          found = true
-          break
-        }
-      }
-      if found {
-        break
-      }
-    }
-  }
-
-  fmt.Println("Flag:", flag)
-}
+for i in strings:
+    flag = 0
+    for first in range(2 ** 8):
+        for second in range(2 ** 8):
+            data = [first, second]
+            if crc32(bytes(data)) == int.from_bytes(i, byteorder='little'):
+                answer = answer +  "".join(map(chr, data))
+                flag = 1
+                break
+        if flag:
+            break
+print(answer)
 ```
+## Этап 2: Расследование инцидента
 
+### Задание №1:
+
+1. Вредоносное ПО было скачано с подозрительного письма с почты в архиве
+По легенде + список открытых файлов на системе с помощью BrowsingHistoryView
+
+2. [http://95.169.192.220:8080/prikol.exe](http://95.169.192.220:8080/prikol.exe)
+Просмотр логов системы -> логи Powershell в 18:44 03.03.2024 Rjomba.exe выполняет загрузку
+3. winrar cve-2023-38831
+
+4. Win32 API, IsDebuggerPresent()
+
+5. AES CBC 256bit
+
+6. CBC ключ: amogusamogusamogusamogusamogusa, IV: abababababababab
+
+7. Апи телеграмма
+Просмотр сетевого wireshark-дампа на чистой машине (поставили чистый образ win10 в виртуалку)
+8. sFYZ#2z9VdUR9sm`3JRz
+При имебющем ключе шифрования данных и IV расшифровать не сложно (юзали рандом сайтик)
+
+### Задание №2:
+
+7. в /root/.bash_history да и в /XxJynx можно заметить руткит jynx2
